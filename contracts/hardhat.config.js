@@ -84,9 +84,13 @@ module.exports = {
   },
 
   networks: {
-    localgeth: {
+    localsink: {
       url: "http://localhost:8545",
       accounts: ["b0057716d5917badaf911b193b12b910811c1497b5bada8d7711f758981c3773"],
-    }
+    },
+    localsource: {
+      url: "http://localhost:8555",
+      accounts: ["b0057716d5917badaf911b193b12b910811c1497b5bada8d7711f758981c3774"],
+    },
   }
 };
