@@ -15,6 +15,13 @@ contract Oracle {
         bool transferred;
     }
 
+    struct TransferIdentifier {
+        uint64 chainID;
+        uint64 blockNumber;
+        bytes32 txHash;
+        uint32 logIndex;
+    }
+
     mapping(bytes32 => Request) internal requests;
     uint32 public challengePeriod;
     uint public startingStake;
@@ -22,10 +29,10 @@ contract Oracle {
     IERC20 public transferToken;
     EndpointContract public endpoint;
 
-    event StartRequest(bytes32 indexed transferIdentifier, uint value, address receiver);
-    event UpdatedRequest(bytes32 indexed transferIdentifier, uint newStake, bool legit);
-    event TransferSuccessful(bytes32 indexed transferIdentifier, uint value, address receiver);
-    event Claim(bytes32 indexed transferIdentifier, uint value, address receiver);
+    event StartRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
+    event UpdatedRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint newStake, bool legit);
+    event TransferSuccessful(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
+    event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
 
     constructor(uint32 _challengePeriod, uint _startingStake, IERC20 _stakedToken, IERC20 _transferToken, EndpointContract _endpoint){
         challengePeriod = _challengePeriod;
@@ -35,12 +42,17 @@ contract Oracle {
         endpoint = _endpoint;
     }
 
-    function startRequest(bytes32 transferIdentifier, uint value, address receiver) external {
-        require(requests[transferIdentifier].lastChallengeTime == 0, 'request already exists');
+    function TransferIdentifierHash(TransferIdentifier memory transferIdentifier) public pure returns(bytes32) {
+        return keccak256(abi.encode(transferIdentifier));
+    }
+
+    function startRequest(TransferIdentifier calldata transferIdentifier, uint value, address receiver) external {
+        bytes32 hash = TransferIdentifierHash(transferIdentifier);
+        require(requests[hash].lastChallengeTime == 0, 'request already exists');
 
         stakedToken.transferFrom(msg.sender, address(this), startingStake);
 
-        Request storage request = requests[transferIdentifier];
+        Request storage request = requests[hash];
         request.legit = true;
         request.value = value;
         request.lastStake = startingStake;
@@ -48,7 +60,7 @@ contract Oracle {
         request.receiver = receiver;
         request.lastModifier = msg.sender;
 
-        emit StartRequest(transferIdentifier, value, receiver);
+        emit StartRequest(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, value, receiver);
     }
 
      /**
@@ -59,8 +71,9 @@ contract Oracle {
      *        in between the transaction signing and execution
      *
      */
-    function updateRequest(bytes32 transferIdentifier, uint expectedNewStake) external {
-        Request storage request = requests[transferIdentifier];
+    function updateRequest(TransferIdentifier calldata transferIdentifier, uint expectedNewStake) external {
+        bytes32 hash = TransferIdentifierHash(transferIdentifier);
+        Request storage request = requests[hash];
         require(request.lastChallengeTime != 0, 'request does not exist');
         require(request.lastChallengeTime + challengePeriod < block.timestamp, 'challenge period is over');
 
@@ -77,15 +90,16 @@ contract Oracle {
         request.lastStake = newStake;
         request.lastModifier = msg.sender;
 
-        emit UpdatedRequest(transferIdentifier, newStake, request.legit);
+        emit UpdatedRequest(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, newStake, request.legit);
     }
 
-    function claimRequest(bytes32 transferIdentifier) external {
-        Request memory request = requests[transferIdentifier];
+    function claimRequest(TransferIdentifier calldata transferIdentifier) external {
+        bytes32 hash = TransferIdentifierHash(transferIdentifier);
+        Request memory request = requests[hash];
         require(request.lastChallengeTime + challengePeriod >= block.timestamp, 'challenge period is not over');
         require(request.claimed == false, 'request already claimed');
         request.claimed = true;
-        requests[transferIdentifier] = request;
+        requests[hash] = request;
 
         require(2 * request.lastStake > request.lastStake, 'total stake overflow');
         uint totalStaked = 2 * request.lastStake - startingStake;
@@ -95,25 +109,26 @@ contract Oracle {
             _closeRequest(transferIdentifier);
         }
 
-        emit Claim(transferIdentifier, totalStaked, request.lastModifier);
+        emit Claim(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, totalStaked, request.lastModifier);
     }
 
-    function closeRequest(bytes32 transferIdentifier) external {
-        Request memory request = requests[transferIdentifier];
+    function closeRequest(TransferIdentifier calldata transferIdentifier) external {
+        bytes32 hash = TransferIdentifierHash(transferIdentifier);
+        Request memory request = requests[hash];
         require(request.lastChallengeTime + challengePeriod >= block.timestamp, 'request challenge period is not over');
         require(request.legit, 'request has been denied');
         _closeRequest(transferIdentifier);
     }
 
-    function _closeRequest(bytes32 transferIdentifier) internal {
-        Request storage request = requests[transferIdentifier];
+    function _closeRequest(TransferIdentifier memory transferIdentifier) internal {
+        Request storage request = requests[TransferIdentifierHash(transferIdentifier)];
         request.transferred = true;
         endpoint.releaseTransfer(request.receiver, request.value);
-        emit TransferSuccessful(transferIdentifier, request.value, request.receiver);
+        emit TransferSuccessful(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, request.value, request.receiver);
     }
 
-    function getRequest(bytes32 transferIdentifier) external view returns (bool, uint, uint, uint32, address, address){
-        Request memory request = requests[transferIdentifier];
+    function getRequest(TransferIdentifier calldata transferIdentifier) external view returns (bool, uint, uint, uint32, address, address){
+        Request memory request = requests[TransferIdentifierHash(transferIdentifier)];
         return(
             request.legit,
             request.value,
@@ -124,8 +139,8 @@ contract Oracle {
         );
     }
 
-    function isSuccessfulRequest(bytes32 transferIdentifier, uint value, address receiver) external view returns (bool) {
-        Request memory request = requests[transferIdentifier];
+    function isSuccessfulRequest(TransferIdentifier calldata transferIdentifier, uint value, address receiver) external view returns (bool) {
+        Request memory request = requests[TransferIdentifierHash(transferIdentifier)];
         if (
             request.value == value &&
             request.receiver == receiver &&
