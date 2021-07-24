@@ -1,6 +1,6 @@
 pragma solidity ^0.8.6;
 
-import "../ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract TestERC20 is ERC20{
 
@@ -12,3 +12,6 @@ contract TestERC20 is ERC20{
         _mint(account, amount);
     }
 }
+
+
+//SPDX-License-Identifier: MIT
