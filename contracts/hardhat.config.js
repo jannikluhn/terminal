@@ -76,5 +76,17 @@ task("connectEndpoint", "Connect a sink or a source to another sink or source")
  * @type import('hardhat/config').HardhatUserConfig
  */
 module.exports = {
-  solidity: "0.8.6",
+  solidity: {
+    version: "0.8.6",
+    optimizer: {
+      enabled: true,
+    },
+  },
+
+  networks: {
+    localgeth: {
+      url: "http://localhost:8545",
+      accounts: ["b0057716d5917badaf911b193b12b910811c1497b5bada8d7711f758981c3773"],
+    }
+  }
 };
