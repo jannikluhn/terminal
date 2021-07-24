@@ -12,6 +12,9 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   }
 });
 
+const challengePeriod = 60
+const startingStake = 1
+
 task("deploySink", "Deploy and initialize a sink and friends")
   .setAction(async () => {
     const tokenFactory = await hre.ethers.getContractFactory("TestERC20");
@@ -19,30 +22,40 @@ task("deploySink", "Deploy and initialize a sink and friends")
     console.log("Deploying token...", token.deployTransaction.hash);
     await token.deployTransaction.wait();
 
-    const oracle = (await hre.ethers.getSigners())[0].address; // TODO: deploy
+    const oracleFactory = await hre.ethers.getContractFactory("Oracle");
+    const oracle = await oracleFactory.deploy();
+    console.log("Deploying oracle...", oracle.deployTransaction.hash);
+    await oracle.deployTransaction.wait();
 
     const sinkFactory = await hre.ethers.getContractFactory("ERC20Sink");
-    const sink = await sinkFactory.deploy(sinkFactory.signer.address, oracle, token.address);
+    const sink = await sinkFactory.deploy(sinkFactory.signer.address, oracle.address, token.address);
     console.log("Deploying sink...", sink.deployTransaction.hash);
     await sink.deployTransaction.wait();
 
+    const oracleInit = await oracle.init(challengePeriod, startingStake, token.address, token.address, sink.address);
+    console.log("Initializing oracle...", oracleInit.hash);
+    await oracleInit.wait()
+
     console.log("Deployment complete");
     console.log("Sink:", sink.address);
-    console.log("Oracle:", oracle);
+    console.log("Oracle:", oracle.address);
     console.log("Test token:", token.address);
   });
 
 task("deploySource", "Deploy and initialize a source and friends")
   .setAction(async () => {
-    const tokenFactory = await hre.ethers.getContractFactory("SourceToken");
+    const tokenFactory = await hre.ethers.getContractFactory("TestERC20");
     const token = await tokenFactory.deploy("SourceToken", "SST");
     console.log("Deploying token...", token.deployTransaction.hash);
     await token.deployTransaction.wait();
 
-    const oracle = (await hre.ethers.getSigners())[0].address; // TODO: deploy
+    const oracleFactory = await hre.ethers.getContractFactory("Oracle");
+    const oracle = await oracleFactory.deploy();
+    console.log("Deploying oracle...", oracle.deployTransaction.hash);
+    await oracle.deployTransaction.wait();
 
     const sourceFactory = await hre.ethers.getContractFactory("ERC20Source");
-    const source = await sourceFactory.deploy(sourceFactory.signer.address, oracle, token.address);
+    const source = await sourceFactory.deploy(sourceFactory.signer.address, oracle.address, token.address);
     console.log("Deploying source...", source.deployTransaction.hash);
     await source.deployTransaction.wait();
 
@@ -50,9 +63,13 @@ task("deploySource", "Deploy and initialize a source and friends")
     console.log("Setting source as minter...", setMinterTx.hash);
     await setMinterTx.wait();
 
+    const oracleInit = await oracle.init(challengePeriod, startingStake, token.address, token.address, source.address);
+    console.log("Initializing oracle...", oracleInit.hash);
+    await oracleInit.wait()
+
     console.log("Deployment complete");
     console.log("Source:", source.address);
-    console.log("Oracle:", oracle);
+    console.log("Oracle:", oracle.address);
     console.log("Source token:", token.address);
   })
 
@@ -67,6 +84,28 @@ task("connectEndpoint", "Connect a sink or a source to another sink or source")
     console.log("waiting for tx...", tx.hash);
     await tx.wait();
     console.log("Done");
+  })
+
+task("startTransfer")
+  .addParam("token", "address of the token contract")
+  .addParam("sink", "address of the sink")
+  .addParam("source", "address of the source")
+  .setAction(async (args) => {
+      const account = await hre.ethers.getSigners()[0]
+      const transferValue = 123456
+
+      console.logs("Minting tokens to user...", account)
+      const token = await (await hre.ethers.getContractFactory("TestERC20")).attach(args.token)
+      const mint = await token.mint(account, transferValue)
+      console.logs("Allowing transfer from sink...")
+      const allow = await token.approve(args.sink, transferValue)
+      await Promise.all([mint, allow])
+
+      console.logs("Requesting transfer on sink...")
+      const sink = await (await hre.ethers.getContractFactory("ERC20Sink")).attach(args.sink)
+      const chainId = 1
+      const requestTransfer = sink.requestTransfer([chainId, args.source], account, transferValue)
+      await requestTransfer
   })
 
 // You need to export an object to set up your config

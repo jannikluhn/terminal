@@ -175,7 +175,7 @@ contract SourceToken is ERC20, ERC20Burnable {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {
     }
 
-    function mint(address account, uint256 amount) public {
+    function mint(address account, uint256 amount) public virtual {
         if (msg.sender != minter) {
             revert SenderIsNotMinter(msg.sender, minter);
         }
