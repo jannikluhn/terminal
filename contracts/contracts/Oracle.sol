@@ -1,6 +1,6 @@
 pragma solidity ^0.8.6;
 
-import "./interfaces/IERC20.sol";
+import "./Endpoints.sol";
 
 contract Oracle {
 
@@ -12,6 +12,7 @@ contract Oracle {
         address receiver;
         address lastModifier;
         bool claimed;
+        bool transferred;
     }
 
     mapping(bytes32 => Request) internal requests;
@@ -19,15 +20,19 @@ contract Oracle {
     uint public startingStake;
     IERC20 public stakedToken;
     IERC20 public transferToken;
+    EndpointContract public endpoint;
 
-    event StartRequest(bytes32 transferIdentifier, uint value, address receiver);
-    event UpdatedRequest(bytes32 transferIdentifier, uint newStake, bool legit);
+    event StartRequest(bytes32 indexed transferIdentifier, uint value, address receiver);
+    event UpdatedRequest(bytes32 indexed transferIdentifier, uint newStake, bool legit);
+    event TransferSuccessful(bytes32 indexed transferIdentifier, uint value, address receiver);
+    event Claim(bytes32 indexed transferIdentifier, uint value, address receiver);
 
-    constructor(uint32 _challengePeriod, uint _startingStake, IERC20 _stakedToken, IERC20 _transferToken){
+    constructor(uint32 _challengePeriod, uint _startingStake, IERC20 _stakedToken, IERC20 _transferToken, EndpointContract _endpoint){
         challengePeriod = _challengePeriod;
         startingStake = _startingStake;
         stakedToken = _stakedToken;
         transferToken = _transferToken;
+        endpoint = _endpoint;
     }
 
     function startRequest(bytes32 transferIdentifier, uint value, address receiver) external {
@@ -78,14 +83,33 @@ contract Oracle {
     function claimRequest(bytes32 transferIdentifier) external {
         Request memory request = requests[transferIdentifier];
         require(request.lastChallengeTime + challengePeriod >= block.timestamp, 'challenge period is not over');
-        require(request.lastModifier == msg.sender, 'last request modifier is not msg.sender');
         require(request.claimed == false, 'request already claimed');
         request.claimed = true;
         requests[transferIdentifier] = request;
 
         require(2 * request.lastStake > request.lastStake, 'total stake overflow');
         uint totalStaked = 2 * request.lastStake - startingStake;
-        stakedToken.transfer(msg.sender, totalStaked);
+        stakedToken.transfer(request.lastModifier, totalStaked);
+
+        if (! request.transferred) {
+            _closeRequest(transferIdentifier);
+        }
+
+        emit Claim(transferIdentifier, totalStaked, request.lastModifier);
+    }
+
+    function closeRequest(bytes32 transferIdentifier) external {
+        Request memory request = requests[transferIdentifier];
+        require(request.lastChallengeTime + challengePeriod >= block.timestamp, 'request challenge period is not over');
+        require(request.legit, 'request has been denied');
+        _closeRequest(transferIdentifier);
+    }
+
+    function _closeRequest(bytes32 transferIdentifier) internal {
+        Request storage request = requests[transferIdentifier];
+        request.transferred = true;
+        endpoint.releaseTransfer(request.receiver, request.value);
+        emit TransferSuccessful(transferIdentifier, request.value, request.receiver);
     }
 
     function getRequest(bytes32 transferIdentifier) external view returns (bool, uint, uint, uint32, address, address){

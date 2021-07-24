@@ -18,7 +18,8 @@ describe("Oracle", function () {
     await token.deployed();
 
     const oracleFactory = await ethers.getContractFactory("Oracle");
-    oracle = await oracleFactory.deploy(challengePeriod, startingStake, token.address, token.address);
+    // TODO: the arguments in the oracle are not correct, we need an endpoint
+    oracle = await oracleFactory.deploy(challengePeriod, startingStake, token.address, token.address, token.address);
     await oracle.deployed();
 
     [requestInitiator, requestDenier] = await ethers.getSigners();
