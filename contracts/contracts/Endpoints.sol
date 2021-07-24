@@ -21,6 +21,11 @@ error ERC20TransferFailed(
     address to,
     uint256 amount
 );
+error MinterAlreadySet();
+error SenderIsNotMinter(
+    address sender,
+    address minter
+);
 
 contract HasAdmin is AccessControl {
 
@@ -116,7 +121,8 @@ contract ERC20Sink is EndpointContract {
 
     IERC20 public token;
 
-    constructor(address admin, address oracle) EndpointContract(admin, oracle) {
+    constructor(address admin, address oracle, IERC20 sinkToken) EndpointContract(admin, oracle) {
+        token = sinkToken;
     }
 
     function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount) public override {
@@ -161,16 +167,26 @@ contract ERC20Sink is EndpointContract {
 
 }
 
-contract SourceToken is ERC20, ERC20Burnable, AccessControl {
+contract SourceToken is ERC20, ERC20Burnable {
 
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+    address public minter;
 
-    constructor(string memory name, string memory symbol, address minter) ERC20(name, symbol) {
-        _setupRole(MINTER_ROLE, minter);
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
     }
 
-    function mint(address account, uint256 amount) public onlyRole(MINTER_ROLE) {
+    function mint(address account, uint256 amount) public {
+        if (msg.sender != minter) {
+            revert SenderIsNotMinter(msg.sender, minter);
+        }
         _mint(account, amount);
+    }
+
+    function setMinter(address newMinter) public {
+        if (minter != address(0)) {
+            revert MinterAlreadySet();
+        }
+        minter = newMinter;
     }
 }
 
@@ -178,7 +194,8 @@ contract ERC20Source is EndpointContract {
 
     SourceToken public token;
 
-    constructor(address admin, address oracle) EndpointContract(admin, oracle) {
+    constructor(address admin, address oracle, SourceToken sourceToken) EndpointContract(admin, oracle) {
+        token = sourceToken;
     }
 
     function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount) public override {
