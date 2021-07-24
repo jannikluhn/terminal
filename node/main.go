@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 
-	endpointcontract "github.com/jannikluhn/terminal/node/contracts"
+	"github.com/jannikluhn/terminal/node/contracts/endpointcontract"
 )
 
 type EndpointLocation struct {
