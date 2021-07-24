@@ -18,8 +18,8 @@ contract Oracle {
     struct TransferIdentifier {
         uint64 chainID;
         uint64 blockNumber;
-        bytes32 txHash;
         uint32 logIndex;
+        bytes32 txHash;
     }
 
     mapping(bytes32 => Request) internal requests;
@@ -28,18 +28,21 @@ contract Oracle {
     IERC20 public stakedToken;
     IERC20 public transferToken;
     EndpointContract public endpoint;
+    bool public initialized;
 
     event StartRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
     event UpdatedRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint newStake, bool legit);
     event TransferSuccessful(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
     event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
 
-    constructor(uint32 _challengePeriod, uint _startingStake, IERC20 _stakedToken, IERC20 _transferToken, EndpointContract _endpoint){
+    function init(uint32 _challengePeriod, uint _startingStake, IERC20 _stakedToken, IERC20 _transferToken, EndpointContract _endpoint) external {
+        require(! initialized, "contract already initialized");
         challengePeriod = _challengePeriod;
         startingStake = _startingStake;
         stakedToken = _stakedToken;
         transferToken = _transferToken;
         endpoint = _endpoint;
+        initialized = true;
     }
 
     function TransferIdentifierHash(TransferIdentifier memory transferIdentifier) public pure returns(bytes32) {
