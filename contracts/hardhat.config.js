@@ -14,8 +14,8 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 
 task("deploySink", "Deploy and initialize a sink and friends")
   .setAction(async () => {
-    const tokenFactory = await hre.ethers.getContractFactory("TestToken");
-    const token = await tokenFactory.deploy();
+    const tokenFactory = await hre.ethers.getContractFactory("TestERC20");
+    const token = await tokenFactory.deploy('TestToken', 'TTK');
     console.log("Deploying token...", token.deployTransaction.hash);
     await token.deployTransaction.wait();
 
