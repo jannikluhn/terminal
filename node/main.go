@@ -14,15 +14,39 @@ import (
 	"github.com/jannikluhn/terminal/node/contracts/endpointcontract"
 )
 
-type EndpointLocation struct {
-	ChainID         uint64
-	ContractAddress common.Address
-}
-
 const sinkAddressHex = "0xFA33c8EF8b5c4f3003361c876a298D1DB61ccA4e"
 const sourceAddressHex = "0x14b47DBb4b0F7bff4205F4D1f0c1BEEBCE47b33C"
 const sinkRpcUrl = "ws://127.0.0.1:8546/"
 const sourceRpcUrl = "ws://127.0.0.1:8556/"
+
+type EndpointConnection struct {
+	Client   *ethclient.Client
+	Contract *endpointcontract.Endpointcontract
+	ChainID  uint64
+}
+
+func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address) (EndpointConnection, error) {
+	client, err := ethclient.Dial(rpcUrl)
+	if err != nil {
+		return EndpointConnection{}, errors.Wrapf(err, "failed to connect to Ethereum node at %s", rpcUrl)
+	}
+
+	chainID, err := client.ChainID(ctx)
+	if err != nil {
+		return EndpointConnection{}, errors.Wrap(err, "failed to query chain id")
+	}
+
+	contract, err := endpointcontract.NewEndpointcontract(endpointContractAddress, client)
+	if err != nil {
+		return EndpointConnection{}, errors.Wrap(err, "faild to create endpoint contract instance")
+	}
+
+	return EndpointConnection{
+		Client:   client,
+		Contract: contract,
+		ChainID:  chainID.Uint64(),
+	}, nil
+}
 
 func main() {
 	err := run()
@@ -58,7 +82,7 @@ func NewTransferFromRequestEvent(chainID uint64, ev *endpointcontract.Endpointco
 	}
 }
 
-func listenForRequests(ctx context.Context, client *ethclient.Client, endpoint endpointcontract.Endpoint) (chan Transfer, chan error) {
+func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Transfer, chan error) {
 	requestChannel := make(chan Transfer)
 	errorChannel := make(chan error)
 
@@ -68,24 +92,13 @@ func listenForRequests(ctx context.Context, client *ethclient.Client, endpoint e
 			close(errorChannel)
 			close(requestChannel)
 		}
-		contract, err := endpointcontract.NewEndpointcontract(endpoint.ContractAddress, client)
-		if err != nil {
-			fail(errors.Wrap(err, "faild to create endpoint contract instance"))
-			return
-		}
-
-		chainID, err := client.ChainID(ctx)
-		if err != nil {
-			fail(errors.Wrap(err, "faild to query chain id"))
-			return
-		}
 
 		watchOpts := &bind.WatchOpts{
 			Context: ctx,
 			Start:   nil,
 		}
 		transferRequestedChannel := make(chan *endpointcontract.EndpointcontractTransferRequested)
-		sub, err := contract.EndpointcontractFilterer.WatchTransferRequested(watchOpts, transferRequestedChannel)
+		sub, err := conn.Contract.EndpointcontractFilterer.WatchTransferRequested(watchOpts, transferRequestedChannel)
 		if err != nil {
 			fail(errors.Wrap(err, "faild to subscribe to TransferRequested events"))
 			return
@@ -97,8 +110,12 @@ func listenForRequests(ctx context.Context, client *ethclient.Client, endpoint e
 				fail(errors.Wrap(err, "event subscription error"))
 				return
 			case ev := <-transferRequestedChannel:
-				transfer := NewTransferFromRequestEvent(chainID.Uint64(), ev)
+				transfer := NewTransferFromRequestEvent(conn.ChainID, ev)
 				requestChannel <- transfer
+			case <-ctx.Done():
+				close(errorChannel)
+				close(requestChannel)
+				return
 			}
 		}
 	}()
@@ -106,38 +123,26 @@ func listenForRequests(ctx context.Context, client *ethclient.Client, endpoint e
 	return requestChannel, errorChannel
 }
 
+func processTransferRequests(requests chan Transfer) error {
+	for {
+
+	}
+}
+
 func run() error {
 	ctx := context.Background()
 
-	sinkClient, err := ethclient.Dial(sinkRpcUrl)
+	sinkConnection, err := NewEndpointConnection(ctx, sinkRpcUrl, common.HexToAddress(sinkAddressHex))
 	if err != nil {
-		return errors.Wrap(err, "failed to connect to sink Ethereum node")
+		return err
 	}
-	sourceClient, err := ethclient.Dial(sourceRpcUrl)
+	sourceConnection, err := NewEndpointConnection(ctx, sourceRpcUrl, common.HexToAddress(sourceAddressHex))
 	if err != nil {
-		return errors.Wrap(err, "failed to connect to sink Ethereum node")
+		return err
 	}
 
-	sinkChainID, err := sinkClient.ChainID(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to query sink chain id")
-	}
-	sourceChainID, err := sourceClient.ChainID(ctx)
-	if err != nil {
-		return errors.Wrap(err, "failed to query source chain id")
-	}
-
-	sinkEndpoint := endpointcontract.Endpoint{
-		ChainID:         sinkChainID.Uint64(),
-		ContractAddress: common.HexToAddress(sinkAddressHex),
-	}
-	sourceEndpoint := endpointcontract.Endpoint{
-		ChainID:         sourceChainID.Uint64(),
-		ContractAddress: common.HexToAddress(sourceAddressHex),
-	}
-
-	sinkRequestChannel, sinkErrorChannel := listenForRequests(ctx, sinkClient, sinkEndpoint)
-	sourceRequestChannel, sourceErrorChannel := listenForRequests(ctx, sourceClient, sourceEndpoint)
+	sinkRequestChannel, sinkErrorChannel := listenForRequests(ctx, sinkConnection)
+	sourceRequestChannel, sourceErrorChannel := listenForRequests(ctx, sourceConnection)
 
 	for {
 		select {
