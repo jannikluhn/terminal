@@ -10,9 +10,9 @@ contract Oracle {
         uint lastStake;
         uint32 lastChallengeTime;
         address receiver;
-        address lastModifier;
         bool claimed;
         bool transferred;
+        address[] stakers;
     }
 
     struct TransferIdentifier {
@@ -33,7 +33,7 @@ contract Oracle {
     event StartRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
     event UpdatedRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint newStake, bool legit);
     event TransferSuccessful(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
-    event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
+    event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex);
 
     function init(uint32 _challengePeriod, uint _startingStake, IERC20 _stakedToken, IERC20 _transferToken, EndpointContract _endpoint) external {
         require(! initialized, "contract already initialized");
@@ -61,7 +61,7 @@ contract Oracle {
         request.lastStake = startingStake;
         request.lastChallengeTime = uint32(block.timestamp);
         request.receiver = receiver;
-        request.lastModifier = msg.sender;
+        request.stakers = [msg.sender];
 
         emit StartRequest(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, value, receiver);
     }
@@ -89,9 +89,8 @@ contract Oracle {
 
         request.legit = ! request.legit;
         request.lastChallengeTime = uint32(block.timestamp);
-        request.lastModifier = msg.sender;
         request.lastStake = newStake;
-        request.lastModifier = msg.sender;
+        request.stakers[request.stakers.length] = msg.sender;
 
         emit UpdatedRequest(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, newStake, request.legit);
     }
@@ -104,15 +103,27 @@ contract Oracle {
         request.claimed = true;
         requests[hash] = request;
 
-        require(2 * request.lastStake > request.lastStake, 'total stake overflow');
-        uint totalStaked = 2 * request.lastStake - startingStake;
-        stakedToken.transfer(request.lastModifier, totalStaked);
+        uint stakeToWithdraw = startingStake;
+        if (request.legit) {
+            assert(request.stakers.length % 2 == 1);
+            for (uint i = 0; i < request.stakers.length; i += 2) {
+                stakedToken.transfer(request.stakers[i], stakeToWithdraw);
+                stakeToWithdraw *= 6;
+            }
+        } else {
+            stakeToWithdraw = startingStake * 2;
+            assert(request.stakers.length % 2 == 0);
+            for (uint i = 1; i < request.stakers.length; i += 2) {
+                stakedToken.transfer(request.stakers[i], stakeToWithdraw);
+                stakeToWithdraw *= 6;
+            }
+        }
 
         if (! request.transferred) {
             _closeRequest(transferIdentifier);
         }
 
-        emit Claim(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, totalStaked, request.lastModifier);
+        emit Claim(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex);
     }
 
     function closeRequest(TransferIdentifier calldata transferIdentifier) external {
@@ -130,16 +141,8 @@ contract Oracle {
         emit TransferSuccessful(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, request.value, request.receiver);
     }
 
-    function getRequest(TransferIdentifier calldata transferIdentifier) external view returns (bool, uint, uint, uint32, address, address){
-        Request memory request = requests[TransferIdentifierHash(transferIdentifier)];
-        return(
-            request.legit,
-            request.value,
-            request.lastStake,
-            request.lastChallengeTime,
-            request.receiver,
-            request.lastModifier
-        );
+    function getRequest(TransferIdentifier calldata transferIdentifier) external view returns (Request memory){
+        return requests[TransferIdentifierHash(transferIdentifier)];
     }
 
     function isSuccessfulRequest(TransferIdentifier calldata transferIdentifier, uint value, address receiver) external view returns (bool) {
