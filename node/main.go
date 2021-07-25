@@ -2,30 +2,41 @@ package main
 
 import (
 	"context"
+	"crypto/ecdsa"
 	"log"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/pkg/errors"
 
 	"github.com/jannikluhn/terminal/node/contracts/endpointcontract"
+	"github.com/jannikluhn/terminal/node/contracts/oracle"
 )
 
-const sinkAddressHex = "0xFA33c8EF8b5c4f3003361c876a298D1DB61ccA4e"
-const sourceAddressHex = "0x14b47DBb4b0F7bff4205F4D1f0c1BEEBCE47b33C"
+const sinkAddressHex = "0xBe0B0f08A599F07699E98A9D001084e97b9a900A"
+const sinkOracleAddressHex = "0xFA33c8EF8b5c4f3003361c876a298D1DB61ccA4e"
+const sinkPrivateKeyHex = "b0057716d5917badaf911b193b12b910811c1497b5bada8d7711f758981c3773"
+
+const sourceAddressHex = "0x4fd74C68a8c68610Bd40BdC550f195bD367Ff238"
+const sourceOracleAddressHex = "0x14b47DBb4b0F7bff4205F4D1f0c1BEEBCE47b33C"
+const sourcePrivateKeyHex = "b0057716d5917badaf911b193b12b910811c1497b5bada8d7711f758981c3774"
+
 const sinkRpcUrl = "ws://127.0.0.1:8546/"
 const sourceRpcUrl = "ws://127.0.0.1:8556/"
 
 type EndpointConnection struct {
-	Client   *ethclient.Client
-	Contract *endpointcontract.Endpointcontract
-	ChainID  uint64
+	Client         *ethclient.Client
+	ChainID        uint64
+	Contract       *endpointcontract.Endpointcontract
+	OracleContract *oracle.Oracle
+	PrivateKey     *ecdsa.PrivateKey
 }
 
-func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address) (EndpointConnection, error) {
+func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address, oracleContractAddress common.Address, privateKey *ecdsa.PrivateKey) (EndpointConnection, error) {
 	client, err := ethclient.Dial(rpcUrl)
 	if err != nil {
 		return EndpointConnection{}, errors.Wrapf(err, "failed to connect to Ethereum node at %s", rpcUrl)
@@ -36,16 +47,30 @@ func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractA
 		return EndpointConnection{}, errors.Wrap(err, "failed to query chain id")
 	}
 
-	contract, err := endpointcontract.NewEndpointcontract(endpointContractAddress, client)
+	endpointContract, err := endpointcontract.NewEndpointcontract(endpointContractAddress, client)
 	if err != nil {
 		return EndpointConnection{}, errors.Wrap(err, "faild to create endpoint contract instance")
 	}
+	oracleContract, err := oracle.NewOracle(oracleContractAddress, client)
+	if err != nil {
+		return EndpointConnection{}, errors.Wrap(err, "faild to create oracle contract instance")
+	}
 
 	return EndpointConnection{
-		Client:   client,
-		Contract: contract,
-		ChainID:  chainID.Uint64(),
+		Client:         client,
+		ChainID:        chainID.Uint64(),
+		Contract:       endpointContract,
+		OracleContract: oracleContract,
+		PrivateKey:     privateKey,
 	}, nil
+}
+
+func (conn *EndpointConnection) TransactOpts() (*bind.TransactOpts, error) {
+	opts, err := bind.NewKeyedTransactorWithChainID(conn.PrivateKey, new(big.Int).SetUint64(conn.ChainID))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to create transactor")
+	}
+	return opts, nil
 }
 
 func main() {
@@ -64,6 +89,15 @@ type Transfer struct {
 	ToEndpoint endpointcontract.Endpoint
 	Receiver   common.Address
 	Amount     *big.Int
+}
+
+func (t *Transfer) TransferIdentifier() oracle.OracleTransferIdentifier {
+	return oracle.OracleTransferIdentifier{
+		ChainID:     t.FromEndpoint.ChainID,
+		BlockNumber: t.BlockNumber,
+		TxHash:      t.TransactionHash,
+		LogIndex:    uint32(t.LogIndex),
+	}
 }
 
 func NewTransferFromRequestEvent(chainID uint64, ev *endpointcontract.EndpointcontractTransferRequested) Transfer {
@@ -123,26 +157,84 @@ func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Trans
 	return requestChannel, errorChannel
 }
 
-func processTransferRequests(requests chan Transfer) error {
-	for {
-
+func processTransfer(ctx context.Context, connections map[uint64]EndpointConnection, transfer Transfer) error {
+	toConn, ok := connections[transfer.ToEndpoint.ChainID]
+	if !ok {
+		return errors.Errorf("received transfer request to unknown chain id %d: %+v", transfer.ToEndpoint.ChainID, transfer)
 	}
+
+	// check if request is already handled by someone else
+	callOpts := &bind.CallOpts{
+		Pending: false,
+		Context: ctx,
+	}
+	exists, err := toConn.OracleContract.RequestExists(callOpts, transfer.TransferIdentifier())
+	if err != nil {
+		return errors.Wrapf(err, "failed to check if transfer %+v already exists", transfer)
+	}
+	if exists {
+		log.Printf("Transfer %+v is already handled", transfer)
+		return nil
+	}
+
+	transactOpts, err := toConn.TransactOpts()
+	if err != nil {
+		return err
+	}
+	tx, err := toConn.OracleContract.StartRequest(transactOpts, transfer.TransferIdentifier(), transfer.Amount, transfer.Receiver)
+	if err != nil {
+		return errors.Wrapf(err, "error starting request for transfer %+v", transfer)
+	}
+
+	log.Printf("Sent StartRequest tx with hash %s for transfer %+v", tx.Hash(), transfer)
+
+	return nil
 }
 
 func run() error {
 	ctx := context.Background()
 
-	sinkConnection, err := NewEndpointConnection(ctx, sinkRpcUrl, common.HexToAddress(sinkAddressHex))
+	sinkPrivateKey, err := crypto.HexToECDSA(sinkPrivateKeyHex)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "got invalid private key")
 	}
-	sourceConnection, err := NewEndpointConnection(ctx, sourceRpcUrl, common.HexToAddress(sourceAddressHex))
+	sourcePrivateKey, err := crypto.HexToECDSA(sourcePrivateKeyHex)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "got invalid private key")
 	}
 
-	sinkRequestChannel, sinkErrorChannel := listenForRequests(ctx, sinkConnection)
-	sourceRequestChannel, sourceErrorChannel := listenForRequests(ctx, sourceConnection)
+	sinkConnection, err := NewEndpointConnection(
+		ctx,
+		sinkRpcUrl,
+		common.HexToAddress(sinkAddressHex),
+		common.HexToAddress(sinkOracleAddressHex),
+		sinkPrivateKey,
+	)
+	if err != nil {
+		return err
+	}
+	sourceConnection, err := NewEndpointConnection(
+		ctx,
+		sourceRpcUrl,
+		common.HexToAddress(sourceAddressHex),
+		common.HexToAddress(sourceOracleAddressHex),
+		sourcePrivateKey,
+	)
+	if err != nil {
+		return err
+	}
+	if sinkConnection.ChainID == sourceConnection.ChainID {
+		return errors.Errorf("got two endpoint connections with same chain id %d", sinkConnection.ChainID)
+	}
+
+	connections := make(map[uint64]EndpointConnection)
+	connections[sinkConnection.ChainID] = sinkConnection
+	connections[sourceConnection.ChainID] = sourceConnection
+
+	cancelCtx, cancelFn := context.WithCancel(ctx)
+	defer cancelFn()
+	sinkRequestChannel, sinkErrorChannel := listenForRequests(cancelCtx, sinkConnection)
+	sourceRequestChannel, sourceErrorChannel := listenForRequests(cancelCtx, sourceConnection)
 
 	for {
 		select {
@@ -151,9 +243,15 @@ func run() error {
 		case err := <-sourceErrorChannel:
 			return errors.Wrap(err, "error listening to source transfer requests")
 		case transfer := <-sinkRequestChannel:
-			log.Printf("Received sink transfer request %+v", transfer)
+			err := processTransfer(cancelCtx, connections, transfer)
+			if err != nil {
+				log.Printf("failed to process transfer: %s", err)
+			}
 		case transfer := <-sourceRequestChannel:
-			log.Printf("Received source transfer request %+v", transfer)
+			err := processTransfer(cancelCtx, connections, transfer)
+			if err != nil {
+				log.Printf("failed to process transfer: %s", err)
+			}
 		case <-time.After(5 * time.Second):
 			log.Println("listening for events")
 		}
