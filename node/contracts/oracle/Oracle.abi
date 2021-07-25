@@ -1,36 +1,5 @@
 [
   {
-    "inputs": [
-      {
-        "internalType": "uint32",
-        "name": "_challengePeriod",
-        "type": "uint32"
-      },
-      {
-        "internalType": "uint256",
-        "name": "_startingStake",
-        "type": "uint256"
-      },
-      {
-        "internalType": "contract IERC20",
-        "name": "_stakedToken",
-        "type": "address"
-      },
-      {
-        "internalType": "contract IERC20",
-        "name": "_transferToken",
-        "type": "address"
-      },
-      {
-        "internalType": "contract EndpointContract",
-        "name": "_endpoint",
-        "type": "address"
-      }
-    ],
-    "stateMutability": "nonpayable",
-    "type": "constructor"
-  },
-  {
     "anonymous": false,
     "inputs": [
       {
@@ -56,18 +25,6 @@
         "internalType": "uint32",
         "name": "logIndex",
         "type": "uint32"
-      },
-      {
-        "indexed": false,
-        "internalType": "uint256",
-        "name": "value",
-        "type": "uint256"
-      },
-      {
-        "indexed": false,
-        "internalType": "address",
-        "name": "receiver",
-        "type": "address"
       }
     ],
     "name": "Claim",
@@ -217,14 +174,14 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
-          },
-          {
             "internalType": "uint32",
             "name": "logIndex",
             "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct Oracle.TransferIdentifier",
@@ -271,14 +228,14 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
-          },
-          {
             "internalType": "uint32",
             "name": "logIndex",
             "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct Oracle.TransferIdentifier",
@@ -306,14 +263,14 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
-          },
-          {
             "internalType": "uint32",
             "name": "logIndex",
             "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct Oracle.TransferIdentifier",
@@ -354,14 +311,14 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
-          },
-          {
             "internalType": "uint32",
             "name": "logIndex",
             "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct Oracle.TransferIdentifier",
@@ -372,34 +329,97 @@
     "name": "getRequest",
     "outputs": [
       {
-        "internalType": "bool",
+        "components": [
+          {
+            "internalType": "bool",
+            "name": "legit",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "value",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "lastStake",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint32",
+            "name": "lastChallengeTime",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "receiver",
+            "type": "address"
+          },
+          {
+            "internalType": "bool",
+            "name": "claimed",
+            "type": "bool"
+          },
+          {
+            "internalType": "bool",
+            "name": "transferred",
+            "type": "bool"
+          },
+          {
+            "internalType": "address[]",
+            "name": "stakers",
+            "type": "address[]"
+          }
+        ],
+        "internalType": "struct Oracle.Request",
         "name": "",
-        "type": "bool"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      },
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
       {
         "internalType": "uint32",
-        "name": "",
+        "name": "_challengePeriod",
         "type": "uint32"
       },
       {
-        "internalType": "address",
-        "name": "",
+        "internalType": "uint256",
+        "name": "_startingStake",
+        "type": "uint256"
+      },
+      {
+        "internalType": "contract IERC20",
+        "name": "_stakedToken",
         "type": "address"
       },
       {
-        "internalType": "address",
-        "name": "",
+        "internalType": "contract IERC20",
+        "name": "_transferToken",
         "type": "address"
+      },
+      {
+        "internalType": "contract EndpointContract",
+        "name": "_endpoint",
+        "type": "address"
+      }
+    ],
+    "name": "init",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "initialized",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
       }
     ],
     "stateMutability": "view",
@@ -420,14 +440,14 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
-          },
-          {
             "internalType": "uint32",
             "name": "logIndex",
             "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct Oracle.TransferIdentifier",
@@ -484,14 +504,14 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
-          },
-          {
             "internalType": "uint32",
             "name": "logIndex",
             "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct Oracle.TransferIdentifier",
@@ -555,14 +575,14 @@
             "type": "uint64"
           },
           {
-            "internalType": "bytes32",
-            "name": "txHash",
-            "type": "bytes32"
-          },
-          {
             "internalType": "uint32",
             "name": "logIndex",
             "type": "uint32"
+          },
+          {
+            "internalType": "bytes32",
+            "name": "txHash",
+            "type": "bytes32"
           }
         ],
         "internalType": "struct Oracle.TransferIdentifier",

@@ -26,16 +26,28 @@ var (
 	_ = event.NewSubscription
 )
 
+// OracleRequest is an auto generated low-level Go binding around an user-defined struct.
+type OracleRequest struct {
+	Legit             bool
+	Value             *big.Int
+	LastStake         *big.Int
+	LastChallengeTime uint32
+	Receiver          common.Address
+	Claimed           bool
+	Transferred       bool
+	Stakers           []common.Address
+}
+
 // OracleTransferIdentifier is an auto generated low-level Go binding around an user-defined struct.
 type OracleTransferIdentifier struct {
 	ChainID     uint64
 	BlockNumber uint64
-	TxHash      [32]byte
 	LogIndex    uint32
+	TxHash      [32]byte
 }
 
 // OracleABI is the input ABI used to generate the binding from.
-const OracleABI = "[{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"_challengePeriod\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"_startingStake\",\"type\":\"uint256\"},{\"internalType\":\"contractIERC20\",\"name\":\"_stakedToken\",\"type\":\"address\"},{\"internalType\":\"contractIERC20\",\"name\":\"_transferToken\",\"type\":\"address\"},{\"internalType\":\"contractEndpointContract\",\"name\":\"_endpoint\",\"type\":\"address\"}],\"stateMutability\":\"nonpayable\",\"type\":\"constructor\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"Claim\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"StartRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"TransferSuccessful\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newStake\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"legit\",\"type\":\"bool\"}],\"name\":\"UpdatedRequest\",\"type\":\"event\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"TransferIdentifierHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"challengePeriod\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"claimRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"closeRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"endpoint\",\"outputs\":[{\"internalType\":\"contractEndpointContract\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"getRequest\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"},{\"internalType\":\"address\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"isSuccessfulRequest\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"stakedToken\",\"outputs\":[{\"internalType\":\"contractIERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"startRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"startingStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"transferToken\",\"outputs\":[{\"internalType\":\"contractIERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"expectedNewStake\",\"type\":\"uint256\"}],\"name\":\"updateRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
+const OracleABI = "[{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"}],\"name\":\"Claim\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"StartRequest\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"TransferSuccessful\",\"type\":\"event\"},{\"anonymous\":false,\"inputs\":[{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"chaindID\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"indexed\":false,\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"},{\"indexed\":false,\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"indexed\":false,\"internalType\":\"uint256\",\"name\":\"newStake\",\"type\":\"uint256\"},{\"indexed\":false,\"internalType\":\"bool\",\"name\":\"legit\",\"type\":\"bool\"}],\"name\":\"UpdatedRequest\",\"type\":\"event\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"TransferIdentifierHash\",\"outputs\":[{\"internalType\":\"bytes32\",\"name\":\"\",\"type\":\"bytes32\"}],\"stateMutability\":\"pure\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"challengePeriod\",\"outputs\":[{\"internalType\":\"uint32\",\"name\":\"\",\"type\":\"uint32\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"claimRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"closeRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"endpoint\",\"outputs\":[{\"internalType\":\"contractEndpointContract\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"}],\"name\":\"getRequest\",\"outputs\":[{\"components\":[{\"internalType\":\"bool\",\"name\":\"legit\",\"type\":\"bool\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"uint256\",\"name\":\"lastStake\",\"type\":\"uint256\"},{\"internalType\":\"uint32\",\"name\":\"lastChallengeTime\",\"type\":\"uint32\"},{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"},{\"internalType\":\"bool\",\"name\":\"claimed\",\"type\":\"bool\"},{\"internalType\":\"bool\",\"name\":\"transferred\",\"type\":\"bool\"},{\"internalType\":\"address[]\",\"name\":\"stakers\",\"type\":\"address[]\"}],\"internalType\":\"structOracle.Request\",\"name\":\"\",\"type\":\"tuple\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"internalType\":\"uint32\",\"name\":\"_challengePeriod\",\"type\":\"uint32\"},{\"internalType\":\"uint256\",\"name\":\"_startingStake\",\"type\":\"uint256\"},{\"internalType\":\"contractIERC20\",\"name\":\"_stakedToken\",\"type\":\"address\"},{\"internalType\":\"contractIERC20\",\"name\":\"_transferToken\",\"type\":\"address\"},{\"internalType\":\"contractEndpointContract\",\"name\":\"_endpoint\",\"type\":\"address\"}],\"name\":\"init\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"initialized\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"isSuccessfulRequest\",\"outputs\":[{\"internalType\":\"bool\",\"name\":\"\",\"type\":\"bool\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"stakedToken\",\"outputs\":[{\"internalType\":\"contractIERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"value\",\"type\":\"uint256\"},{\"internalType\":\"address\",\"name\":\"receiver\",\"type\":\"address\"}],\"name\":\"startRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"startingStake\",\"outputs\":[{\"internalType\":\"uint256\",\"name\":\"\",\"type\":\"uint256\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[],\"name\":\"transferToken\",\"outputs\":[{\"internalType\":\"contractIERC20\",\"name\":\"\",\"type\":\"address\"}],\"stateMutability\":\"view\",\"type\":\"function\"},{\"inputs\":[{\"components\":[{\"internalType\":\"uint64\",\"name\":\"chainID\",\"type\":\"uint64\"},{\"internalType\":\"uint64\",\"name\":\"blockNumber\",\"type\":\"uint64\"},{\"internalType\":\"uint32\",\"name\":\"logIndex\",\"type\":\"uint32\"},{\"internalType\":\"bytes32\",\"name\":\"txHash\",\"type\":\"bytes32\"}],\"internalType\":\"structOracle.TransferIdentifier\",\"name\":\"transferIdentifier\",\"type\":\"tuple\"},{\"internalType\":\"uint256\",\"name\":\"expectedNewStake\",\"type\":\"uint256\"}],\"name\":\"updateRequest\",\"outputs\":[],\"stateMutability\":\"nonpayable\",\"type\":\"function\"}]"
 
 // Oracle is an auto generated Go binding around an Ethereum contract.
 type Oracle struct {
@@ -179,9 +191,9 @@ func (_Oracle *OracleTransactorRaw) Transact(opts *bind.TransactOpts, method str
 	return _Oracle.Contract.contract.Transact(opts, method, params...)
 }
 
-// TransferIdentifierHash is a free data retrieval call binding the contract method 0x9ebaeaac.
+// TransferIdentifierHash is a free data retrieval call binding the contract method 0x88828d44.
 //
-// Solidity: function TransferIdentifierHash((uint64,uint64,bytes32,uint32) transferIdentifier) pure returns(bytes32)
+// Solidity: function TransferIdentifierHash((uint64,uint64,uint32,bytes32) transferIdentifier) pure returns(bytes32)
 func (_Oracle *OracleCaller) TransferIdentifierHash(opts *bind.CallOpts, transferIdentifier OracleTransferIdentifier) ([32]byte, error) {
 	var out []interface{}
 	err := _Oracle.contract.Call(opts, &out, "TransferIdentifierHash", transferIdentifier)
@@ -196,16 +208,16 @@ func (_Oracle *OracleCaller) TransferIdentifierHash(opts *bind.CallOpts, transfe
 
 }
 
-// TransferIdentifierHash is a free data retrieval call binding the contract method 0x9ebaeaac.
+// TransferIdentifierHash is a free data retrieval call binding the contract method 0x88828d44.
 //
-// Solidity: function TransferIdentifierHash((uint64,uint64,bytes32,uint32) transferIdentifier) pure returns(bytes32)
+// Solidity: function TransferIdentifierHash((uint64,uint64,uint32,bytes32) transferIdentifier) pure returns(bytes32)
 func (_Oracle *OracleSession) TransferIdentifierHash(transferIdentifier OracleTransferIdentifier) ([32]byte, error) {
 	return _Oracle.Contract.TransferIdentifierHash(&_Oracle.CallOpts, transferIdentifier)
 }
 
-// TransferIdentifierHash is a free data retrieval call binding the contract method 0x9ebaeaac.
+// TransferIdentifierHash is a free data retrieval call binding the contract method 0x88828d44.
 //
-// Solidity: function TransferIdentifierHash((uint64,uint64,bytes32,uint32) transferIdentifier) pure returns(bytes32)
+// Solidity: function TransferIdentifierHash((uint64,uint64,uint32,bytes32) transferIdentifier) pure returns(bytes32)
 func (_Oracle *OracleCallerSession) TransferIdentifierHash(transferIdentifier OracleTransferIdentifier) ([32]byte, error) {
 	return _Oracle.Contract.TransferIdentifierHash(&_Oracle.CallOpts, transferIdentifier)
 }
@@ -272,45 +284,71 @@ func (_Oracle *OracleCallerSession) Endpoint() (common.Address, error) {
 	return _Oracle.Contract.Endpoint(&_Oracle.CallOpts)
 }
 
-// GetRequest is a free data retrieval call binding the contract method 0x0f22cf57.
+// GetRequest is a free data retrieval call binding the contract method 0xcfb55cef.
 //
-// Solidity: function getRequest((uint64,uint64,bytes32,uint32) transferIdentifier) view returns(bool, uint256, uint256, uint32, address, address)
-func (_Oracle *OracleCaller) GetRequest(opts *bind.CallOpts, transferIdentifier OracleTransferIdentifier) (bool, *big.Int, *big.Int, uint32, common.Address, common.Address, error) {
+// Solidity: function getRequest((uint64,uint64,uint32,bytes32) transferIdentifier) view returns((bool,uint256,uint256,uint32,address,bool,bool,address[]))
+func (_Oracle *OracleCaller) GetRequest(opts *bind.CallOpts, transferIdentifier OracleTransferIdentifier) (OracleRequest, error) {
 	var out []interface{}
 	err := _Oracle.contract.Call(opts, &out, "getRequest", transferIdentifier)
 
 	if err != nil {
-		return *new(bool), *new(*big.Int), *new(*big.Int), *new(uint32), *new(common.Address), *new(common.Address), err
+		return *new(OracleRequest), err
+	}
+
+	out0 := *abi.ConvertType(out[0], new(OracleRequest)).(*OracleRequest)
+
+	return out0, err
+
+}
+
+// GetRequest is a free data retrieval call binding the contract method 0xcfb55cef.
+//
+// Solidity: function getRequest((uint64,uint64,uint32,bytes32) transferIdentifier) view returns((bool,uint256,uint256,uint32,address,bool,bool,address[]))
+func (_Oracle *OracleSession) GetRequest(transferIdentifier OracleTransferIdentifier) (OracleRequest, error) {
+	return _Oracle.Contract.GetRequest(&_Oracle.CallOpts, transferIdentifier)
+}
+
+// GetRequest is a free data retrieval call binding the contract method 0xcfb55cef.
+//
+// Solidity: function getRequest((uint64,uint64,uint32,bytes32) transferIdentifier) view returns((bool,uint256,uint256,uint32,address,bool,bool,address[]))
+func (_Oracle *OracleCallerSession) GetRequest(transferIdentifier OracleTransferIdentifier) (OracleRequest, error) {
+	return _Oracle.Contract.GetRequest(&_Oracle.CallOpts, transferIdentifier)
+}
+
+// Initialized is a free data retrieval call binding the contract method 0x158ef93e.
+//
+// Solidity: function initialized() view returns(bool)
+func (_Oracle *OracleCaller) Initialized(opts *bind.CallOpts) (bool, error) {
+	var out []interface{}
+	err := _Oracle.contract.Call(opts, &out, "initialized")
+
+	if err != nil {
+		return *new(bool), err
 	}
 
 	out0 := *abi.ConvertType(out[0], new(bool)).(*bool)
-	out1 := *abi.ConvertType(out[1], new(*big.Int)).(**big.Int)
-	out2 := *abi.ConvertType(out[2], new(*big.Int)).(**big.Int)
-	out3 := *abi.ConvertType(out[3], new(uint32)).(*uint32)
-	out4 := *abi.ConvertType(out[4], new(common.Address)).(*common.Address)
-	out5 := *abi.ConvertType(out[5], new(common.Address)).(*common.Address)
 
-	return out0, out1, out2, out3, out4, out5, err
+	return out0, err
 
 }
 
-// GetRequest is a free data retrieval call binding the contract method 0x0f22cf57.
+// Initialized is a free data retrieval call binding the contract method 0x158ef93e.
 //
-// Solidity: function getRequest((uint64,uint64,bytes32,uint32) transferIdentifier) view returns(bool, uint256, uint256, uint32, address, address)
-func (_Oracle *OracleSession) GetRequest(transferIdentifier OracleTransferIdentifier) (bool, *big.Int, *big.Int, uint32, common.Address, common.Address, error) {
-	return _Oracle.Contract.GetRequest(&_Oracle.CallOpts, transferIdentifier)
+// Solidity: function initialized() view returns(bool)
+func (_Oracle *OracleSession) Initialized() (bool, error) {
+	return _Oracle.Contract.Initialized(&_Oracle.CallOpts)
 }
 
-// GetRequest is a free data retrieval call binding the contract method 0x0f22cf57.
+// Initialized is a free data retrieval call binding the contract method 0x158ef93e.
 //
-// Solidity: function getRequest((uint64,uint64,bytes32,uint32) transferIdentifier) view returns(bool, uint256, uint256, uint32, address, address)
-func (_Oracle *OracleCallerSession) GetRequest(transferIdentifier OracleTransferIdentifier) (bool, *big.Int, *big.Int, uint32, common.Address, common.Address, error) {
-	return _Oracle.Contract.GetRequest(&_Oracle.CallOpts, transferIdentifier)
+// Solidity: function initialized() view returns(bool)
+func (_Oracle *OracleCallerSession) Initialized() (bool, error) {
+	return _Oracle.Contract.Initialized(&_Oracle.CallOpts)
 }
 
-// IsSuccessfulRequest is a free data retrieval call binding the contract method 0x8ea91bcc.
+// IsSuccessfulRequest is a free data retrieval call binding the contract method 0x4f5e50b2.
 //
-// Solidity: function isSuccessfulRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 value, address receiver) view returns(bool)
+// Solidity: function isSuccessfulRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 value, address receiver) view returns(bool)
 func (_Oracle *OracleCaller) IsSuccessfulRequest(opts *bind.CallOpts, transferIdentifier OracleTransferIdentifier, value *big.Int, receiver common.Address) (bool, error) {
 	var out []interface{}
 	err := _Oracle.contract.Call(opts, &out, "isSuccessfulRequest", transferIdentifier, value, receiver)
@@ -325,16 +363,16 @@ func (_Oracle *OracleCaller) IsSuccessfulRequest(opts *bind.CallOpts, transferId
 
 }
 
-// IsSuccessfulRequest is a free data retrieval call binding the contract method 0x8ea91bcc.
+// IsSuccessfulRequest is a free data retrieval call binding the contract method 0x4f5e50b2.
 //
-// Solidity: function isSuccessfulRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 value, address receiver) view returns(bool)
+// Solidity: function isSuccessfulRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 value, address receiver) view returns(bool)
 func (_Oracle *OracleSession) IsSuccessfulRequest(transferIdentifier OracleTransferIdentifier, value *big.Int, receiver common.Address) (bool, error) {
 	return _Oracle.Contract.IsSuccessfulRequest(&_Oracle.CallOpts, transferIdentifier, value, receiver)
 }
 
-// IsSuccessfulRequest is a free data retrieval call binding the contract method 0x8ea91bcc.
+// IsSuccessfulRequest is a free data retrieval call binding the contract method 0x4f5e50b2.
 //
-// Solidity: function isSuccessfulRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 value, address receiver) view returns(bool)
+// Solidity: function isSuccessfulRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 value, address receiver) view returns(bool)
 func (_Oracle *OracleCallerSession) IsSuccessfulRequest(transferIdentifier OracleTransferIdentifier, value *big.Int, receiver common.Address) (bool, error) {
 	return _Oracle.Contract.IsSuccessfulRequest(&_Oracle.CallOpts, transferIdentifier, value, receiver)
 }
@@ -432,86 +470,107 @@ func (_Oracle *OracleCallerSession) TransferToken() (common.Address, error) {
 	return _Oracle.Contract.TransferToken(&_Oracle.CallOpts)
 }
 
-// ClaimRequest is a paid mutator transaction binding the contract method 0x8c584b77.
+// ClaimRequest is a paid mutator transaction binding the contract method 0x5811dd2e.
 //
-// Solidity: function claimRequest((uint64,uint64,bytes32,uint32) transferIdentifier) returns()
+// Solidity: function claimRequest((uint64,uint64,uint32,bytes32) transferIdentifier) returns()
 func (_Oracle *OracleTransactor) ClaimRequest(opts *bind.TransactOpts, transferIdentifier OracleTransferIdentifier) (*types.Transaction, error) {
 	return _Oracle.contract.Transact(opts, "claimRequest", transferIdentifier)
 }
 
-// ClaimRequest is a paid mutator transaction binding the contract method 0x8c584b77.
+// ClaimRequest is a paid mutator transaction binding the contract method 0x5811dd2e.
 //
-// Solidity: function claimRequest((uint64,uint64,bytes32,uint32) transferIdentifier) returns()
+// Solidity: function claimRequest((uint64,uint64,uint32,bytes32) transferIdentifier) returns()
 func (_Oracle *OracleSession) ClaimRequest(transferIdentifier OracleTransferIdentifier) (*types.Transaction, error) {
 	return _Oracle.Contract.ClaimRequest(&_Oracle.TransactOpts, transferIdentifier)
 }
 
-// ClaimRequest is a paid mutator transaction binding the contract method 0x8c584b77.
+// ClaimRequest is a paid mutator transaction binding the contract method 0x5811dd2e.
 //
-// Solidity: function claimRequest((uint64,uint64,bytes32,uint32) transferIdentifier) returns()
+// Solidity: function claimRequest((uint64,uint64,uint32,bytes32) transferIdentifier) returns()
 func (_Oracle *OracleTransactorSession) ClaimRequest(transferIdentifier OracleTransferIdentifier) (*types.Transaction, error) {
 	return _Oracle.Contract.ClaimRequest(&_Oracle.TransactOpts, transferIdentifier)
 }
 
-// CloseRequest is a paid mutator transaction binding the contract method 0x8c30077e.
+// CloseRequest is a paid mutator transaction binding the contract method 0x7ce2f854.
 //
-// Solidity: function closeRequest((uint64,uint64,bytes32,uint32) transferIdentifier) returns()
+// Solidity: function closeRequest((uint64,uint64,uint32,bytes32) transferIdentifier) returns()
 func (_Oracle *OracleTransactor) CloseRequest(opts *bind.TransactOpts, transferIdentifier OracleTransferIdentifier) (*types.Transaction, error) {
 	return _Oracle.contract.Transact(opts, "closeRequest", transferIdentifier)
 }
 
-// CloseRequest is a paid mutator transaction binding the contract method 0x8c30077e.
+// CloseRequest is a paid mutator transaction binding the contract method 0x7ce2f854.
 //
-// Solidity: function closeRequest((uint64,uint64,bytes32,uint32) transferIdentifier) returns()
+// Solidity: function closeRequest((uint64,uint64,uint32,bytes32) transferIdentifier) returns()
 func (_Oracle *OracleSession) CloseRequest(transferIdentifier OracleTransferIdentifier) (*types.Transaction, error) {
 	return _Oracle.Contract.CloseRequest(&_Oracle.TransactOpts, transferIdentifier)
 }
 
-// CloseRequest is a paid mutator transaction binding the contract method 0x8c30077e.
+// CloseRequest is a paid mutator transaction binding the contract method 0x7ce2f854.
 //
-// Solidity: function closeRequest((uint64,uint64,bytes32,uint32) transferIdentifier) returns()
+// Solidity: function closeRequest((uint64,uint64,uint32,bytes32) transferIdentifier) returns()
 func (_Oracle *OracleTransactorSession) CloseRequest(transferIdentifier OracleTransferIdentifier) (*types.Transaction, error) {
 	return _Oracle.Contract.CloseRequest(&_Oracle.TransactOpts, transferIdentifier)
 }
 
-// StartRequest is a paid mutator transaction binding the contract method 0x4ef75586.
+// Init is a paid mutator transaction binding the contract method 0xb4fb44a4.
 //
-// Solidity: function startRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 value, address receiver) returns()
+// Solidity: function init(uint32 _challengePeriod, uint256 _startingStake, address _stakedToken, address _transferToken, address _endpoint) returns()
+func (_Oracle *OracleTransactor) Init(opts *bind.TransactOpts, _challengePeriod uint32, _startingStake *big.Int, _stakedToken common.Address, _transferToken common.Address, _endpoint common.Address) (*types.Transaction, error) {
+	return _Oracle.contract.Transact(opts, "init", _challengePeriod, _startingStake, _stakedToken, _transferToken, _endpoint)
+}
+
+// Init is a paid mutator transaction binding the contract method 0xb4fb44a4.
+//
+// Solidity: function init(uint32 _challengePeriod, uint256 _startingStake, address _stakedToken, address _transferToken, address _endpoint) returns()
+func (_Oracle *OracleSession) Init(_challengePeriod uint32, _startingStake *big.Int, _stakedToken common.Address, _transferToken common.Address, _endpoint common.Address) (*types.Transaction, error) {
+	return _Oracle.Contract.Init(&_Oracle.TransactOpts, _challengePeriod, _startingStake, _stakedToken, _transferToken, _endpoint)
+}
+
+// Init is a paid mutator transaction binding the contract method 0xb4fb44a4.
+//
+// Solidity: function init(uint32 _challengePeriod, uint256 _startingStake, address _stakedToken, address _transferToken, address _endpoint) returns()
+func (_Oracle *OracleTransactorSession) Init(_challengePeriod uint32, _startingStake *big.Int, _stakedToken common.Address, _transferToken common.Address, _endpoint common.Address) (*types.Transaction, error) {
+	return _Oracle.Contract.Init(&_Oracle.TransactOpts, _challengePeriod, _startingStake, _stakedToken, _transferToken, _endpoint)
+}
+
+// StartRequest is a paid mutator transaction binding the contract method 0xf2ecf2cf.
+//
+// Solidity: function startRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 value, address receiver) returns()
 func (_Oracle *OracleTransactor) StartRequest(opts *bind.TransactOpts, transferIdentifier OracleTransferIdentifier, value *big.Int, receiver common.Address) (*types.Transaction, error) {
 	return _Oracle.contract.Transact(opts, "startRequest", transferIdentifier, value, receiver)
 }
 
-// StartRequest is a paid mutator transaction binding the contract method 0x4ef75586.
+// StartRequest is a paid mutator transaction binding the contract method 0xf2ecf2cf.
 //
-// Solidity: function startRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 value, address receiver) returns()
+// Solidity: function startRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 value, address receiver) returns()
 func (_Oracle *OracleSession) StartRequest(transferIdentifier OracleTransferIdentifier, value *big.Int, receiver common.Address) (*types.Transaction, error) {
 	return _Oracle.Contract.StartRequest(&_Oracle.TransactOpts, transferIdentifier, value, receiver)
 }
 
-// StartRequest is a paid mutator transaction binding the contract method 0x4ef75586.
+// StartRequest is a paid mutator transaction binding the contract method 0xf2ecf2cf.
 //
-// Solidity: function startRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 value, address receiver) returns()
+// Solidity: function startRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 value, address receiver) returns()
 func (_Oracle *OracleTransactorSession) StartRequest(transferIdentifier OracleTransferIdentifier, value *big.Int, receiver common.Address) (*types.Transaction, error) {
 	return _Oracle.Contract.StartRequest(&_Oracle.TransactOpts, transferIdentifier, value, receiver)
 }
 
-// UpdateRequest is a paid mutator transaction binding the contract method 0xb2bf2ea8.
+// UpdateRequest is a paid mutator transaction binding the contract method 0x5b555135.
 //
-// Solidity: function updateRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 expectedNewStake) returns()
+// Solidity: function updateRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 expectedNewStake) returns()
 func (_Oracle *OracleTransactor) UpdateRequest(opts *bind.TransactOpts, transferIdentifier OracleTransferIdentifier, expectedNewStake *big.Int) (*types.Transaction, error) {
 	return _Oracle.contract.Transact(opts, "updateRequest", transferIdentifier, expectedNewStake)
 }
 
-// UpdateRequest is a paid mutator transaction binding the contract method 0xb2bf2ea8.
+// UpdateRequest is a paid mutator transaction binding the contract method 0x5b555135.
 //
-// Solidity: function updateRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 expectedNewStake) returns()
+// Solidity: function updateRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 expectedNewStake) returns()
 func (_Oracle *OracleSession) UpdateRequest(transferIdentifier OracleTransferIdentifier, expectedNewStake *big.Int) (*types.Transaction, error) {
 	return _Oracle.Contract.UpdateRequest(&_Oracle.TransactOpts, transferIdentifier, expectedNewStake)
 }
 
-// UpdateRequest is a paid mutator transaction binding the contract method 0xb2bf2ea8.
+// UpdateRequest is a paid mutator transaction binding the contract method 0x5b555135.
 //
-// Solidity: function updateRequest((uint64,uint64,bytes32,uint32) transferIdentifier, uint256 expectedNewStake) returns()
+// Solidity: function updateRequest((uint64,uint64,uint32,bytes32) transferIdentifier, uint256 expectedNewStake) returns()
 func (_Oracle *OracleTransactorSession) UpdateRequest(transferIdentifier OracleTransferIdentifier, expectedNewStake *big.Int) (*types.Transaction, error) {
 	return _Oracle.Contract.UpdateRequest(&_Oracle.TransactOpts, transferIdentifier, expectedNewStake)
 }
@@ -589,14 +648,12 @@ type OracleClaim struct {
 	BlockNumber uint64
 	TxHash      [32]byte
 	LogIndex    uint32
-	Value       *big.Int
-	Receiver    common.Address
 	Raw         types.Log // Blockchain specific contextual infos
 }
 
-// FilterClaim is a free log retrieval operation binding the contract event 0x6e7bfd3842b858bb87856e42254823653f5b9b21040d84715e2dbe8c5402c8ca.
+// FilterClaim is a free log retrieval operation binding the contract event 0x58f3005c82600a42850ce31d94e79a7a06a4c1d69b602651a74acf3b34fd797f.
 //
-// Solidity: event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint256 value, address receiver)
+// Solidity: event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex)
 func (_Oracle *OracleFilterer) FilterClaim(opts *bind.FilterOpts) (*OracleClaimIterator, error) {
 
 	logs, sub, err := _Oracle.contract.FilterLogs(opts, "Claim")
@@ -606,9 +663,9 @@ func (_Oracle *OracleFilterer) FilterClaim(opts *bind.FilterOpts) (*OracleClaimI
 	return &OracleClaimIterator{contract: _Oracle.contract, event: "Claim", logs: logs, sub: sub}, nil
 }
 
-// WatchClaim is a free log subscription operation binding the contract event 0x6e7bfd3842b858bb87856e42254823653f5b9b21040d84715e2dbe8c5402c8ca.
+// WatchClaim is a free log subscription operation binding the contract event 0x58f3005c82600a42850ce31d94e79a7a06a4c1d69b602651a74acf3b34fd797f.
 //
-// Solidity: event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint256 value, address receiver)
+// Solidity: event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex)
 func (_Oracle *OracleFilterer) WatchClaim(opts *bind.WatchOpts, sink chan<- *OracleClaim) (event.Subscription, error) {
 
 	logs, sub, err := _Oracle.contract.WatchLogs(opts, "Claim")
@@ -643,9 +700,9 @@ func (_Oracle *OracleFilterer) WatchClaim(opts *bind.WatchOpts, sink chan<- *Ora
 	}), nil
 }
 
-// ParseClaim is a log parse operation binding the contract event 0x6e7bfd3842b858bb87856e42254823653f5b9b21040d84715e2dbe8c5402c8ca.
+// ParseClaim is a log parse operation binding the contract event 0x58f3005c82600a42850ce31d94e79a7a06a4c1d69b602651a74acf3b34fd797f.
 //
-// Solidity: event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint256 value, address receiver)
+// Solidity: event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex)
 func (_Oracle *OracleFilterer) ParseClaim(log types.Log) (*OracleClaim, error) {
 	event := new(OracleClaim)
 	if err := _Oracle.contract.UnpackLog(event, "Claim", log); err != nil {
