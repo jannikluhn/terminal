@@ -28,44 +28,44 @@ const sourcePrivateKeyHex = "b0057716d5917badaf911b193b12b910811c1497b5bada8d771
 const sinkRpcUrl = "ws://127.0.0.1:8546/"
 const sourceRpcUrl = "ws://127.0.0.1:8556/"
 
-type EndpointConnection struct {
-	Client         *ethclient.Client
-	ChainID        uint64
-	Contract       *endpointcontract.Endpointcontract
-	OracleContract *oracle.Oracle
-	PrivateKey     *ecdsa.PrivateKey
+type Connection struct {
+	Client           *ethclient.Client
+	ChainID          uint64
+	EndpointContract *endpointcontract.Endpointcontract
+	OracleContract   *oracle.Oracle
+	PrivateKey       *ecdsa.PrivateKey
 }
 
-func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address, oracleContractAddress common.Address, privateKey *ecdsa.PrivateKey) (EndpointConnection, error) {
+func NewConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address, oracleContractAddress common.Address, privateKey *ecdsa.PrivateKey) (Connection, error) {
 	client, err := ethclient.Dial(rpcUrl)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrapf(err, "failed to connect to Ethereum node at %s", rpcUrl)
+		return Connection{}, errors.Wrapf(err, "failed to connect to Ethereum node at %s", rpcUrl)
 	}
 
 	chainID, err := client.ChainID(ctx)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrap(err, "failed to query chain id")
+		return Connection{}, errors.Wrap(err, "failed to query chain id")
 	}
 
 	endpointContract, err := endpointcontract.NewEndpointcontract(endpointContractAddress, client)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrap(err, "faild to create endpoint contract instance")
+		return Connection{}, errors.Wrap(err, "faild to create endpoint contract instance")
 	}
 	oracleContract, err := oracle.NewOracle(oracleContractAddress, client)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrap(err, "faild to create oracle contract instance")
+		return Connection{}, errors.Wrap(err, "faild to create oracle contract instance")
 	}
 
-	return EndpointConnection{
-		Client:         client,
-		ChainID:        chainID.Uint64(),
-		Contract:       endpointContract,
-		OracleContract: oracleContract,
-		PrivateKey:     privateKey,
+	return Connection{
+		Client:           client,
+		ChainID:          chainID.Uint64(),
+		EndpointContract: endpointContract,
+		OracleContract:   oracleContract,
+		PrivateKey:       privateKey,
 	}, nil
 }
 
-func (conn *EndpointConnection) TransactOpts() (*bind.TransactOpts, error) {
+func (conn *Connection) TransactOpts() (*bind.TransactOpts, error) {
 	opts, err := bind.NewKeyedTransactorWithChainID(conn.PrivateKey, new(big.Int).SetUint64(conn.ChainID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create transactor")
@@ -89,6 +89,20 @@ type Transfer struct {
 	ToEndpoint endpointcontract.Endpoint
 	Receiver   common.Address
 	Amount     *big.Int
+}
+
+type Request struct {
+	StartRequestEvent *oracle.OracleStartRequest
+	ChainID           uint64
+}
+
+func (r *Request) TransferIdentifier() oracle.OracleTransferIdentifier {
+	return oracle.OracleTransferIdentifier{
+		ChainID:     r.StartRequestEvent.ChaindID,
+		BlockNumber: r.StartRequestEvent.BlockNumber,
+		LogIndex:    uint32(r.StartRequestEvent.LogIndex),
+		TxHash:      r.StartRequestEvent.TxHash,
+	}
 }
 
 func (t *Transfer) TransferIdentifier() oracle.OracleTransferIdentifier {
@@ -116,7 +130,7 @@ func NewTransferFromRequestEvent(chainID uint64, ev *endpointcontract.Endpointco
 	}
 }
 
-func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Transfer, chan error) {
+func listenForTransfers(ctx context.Context, conn Connection) (chan Transfer, chan error) {
 	requestChannel := make(chan Transfer)
 	errorChannel := make(chan error)
 
@@ -132,7 +146,7 @@ func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Trans
 			Start:   nil,
 		}
 		transferRequestedChannel := make(chan *endpointcontract.EndpointcontractTransferRequested)
-		sub, err := conn.Contract.EndpointcontractFilterer.WatchTransferRequested(watchOpts, transferRequestedChannel)
+		sub, err := conn.EndpointContract.EndpointcontractFilterer.WatchTransferRequested(watchOpts, transferRequestedChannel)
 		if err != nil {
 			fail(errors.Wrap(err, "faild to subscribe to TransferRequested events"))
 			return
@@ -157,7 +171,7 @@ func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Trans
 	return requestChannel, errorChannel
 }
 
-func processTransfer(ctx context.Context, connections map[uint64]EndpointConnection, transfer Transfer) error {
+func processTransfer(ctx context.Context, connections map[uint64]Connection, transfer Transfer) error {
 	toConn, ok := connections[transfer.ToEndpoint.ChainID]
 	if !ok {
 		return errors.Errorf("received transfer request to unknown chain id %d: %+v", transfer.ToEndpoint.ChainID, transfer)
@@ -191,6 +205,111 @@ func processTransfer(ctx context.Context, connections map[uint64]EndpointConnect
 	return nil
 }
 
+func listenForRequests(ctx context.Context, conn Connection) (chan Request, chan error) {
+	requestChannel := make(chan Request)
+	errorChannel := make(chan error)
+
+	go func() {
+		fail := func(err error) {
+			errorChannel <- err
+			close(errorChannel)
+			close(requestChannel)
+		}
+
+		watchOpts := &bind.WatchOpts{
+			Context: ctx,
+			Start:   nil,
+		}
+		eventChannel := make(chan *oracle.OracleStartRequest)
+		sub, err := conn.OracleContract.OracleFilterer.WatchStartRequest(watchOpts, eventChannel)
+		if err != nil {
+			fail(errors.Wrap(err, "faild to subscribe to TransferRequested events"))
+			return
+		}
+
+		for {
+			select {
+			case err := <-sub.Err():
+				fail(errors.Wrap(err, "event subscription error"))
+				return
+			case ev := <-eventChannel:
+				request := Request{
+					StartRequestEvent: ev,
+					ChainID:           conn.ChainID,
+				}
+				requestChannel <- request
+			case <-ctx.Done():
+				close(errorChannel)
+				close(requestChannel)
+				return
+			}
+		}
+	}()
+
+	return requestChannel, errorChannel
+}
+
+func watchRequest(ctx context.Context, connections map[uint64]Connection, request Request) {
+	log.Println("Start monitoring request")
+	for {
+		done, err := watchRequestStep(ctx, connections, request)
+		if err != nil {
+			log.Printf("error watching request:", err)
+			return
+		}
+		if done {
+			log.Printf("Done watching request")
+			return
+		}
+		time.Sleep(1 * time.Second)
+	}
+}
+
+func watchRequestStep(ctx context.Context, connections map[uint64]Connection, request Request) (bool, error) {
+	conn, ok := connections[request.ChainID]
+	if !ok {
+		return false, errors.Errorf("unknown chain id %d", request.ChainID)
+	}
+
+	block, err := conn.Client.BlockByNumber(ctx, nil)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to query block")
+	}
+	callOpts := &bind.CallOpts{
+		Pending: true,
+		Context: ctx,
+	}
+
+	requestStatus, err := conn.OracleContract.GetRequest(callOpts, request.TransferIdentifier())
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to query request status")
+	}
+
+	challengePeriod, err := conn.OracleContract.ChallengePeriod(callOpts)
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to query challenge period")
+	}
+
+	if requestStatus.Claimed {
+		return true, nil
+	}
+	if requestStatus.LastChallengeTime+challengePeriod < uint32(block.Time()) {
+		return false, nil
+	}
+
+	transactOpts, err := conn.TransactOpts()
+	if err != nil {
+		return false, err
+	}
+	tx, err := conn.OracleContract.ClaimRequest(transactOpts, request.TransferIdentifier())
+	if err != nil {
+		return false, err
+	}
+	log.Printf("Claiming request: %s", tx.Hash())
+
+	return true, nil
+}
+
 func run() error {
 	ctx := context.Background()
 
@@ -203,7 +322,7 @@ func run() error {
 		return errors.Wrapf(err, "got invalid private key")
 	}
 
-	sinkConnection, err := NewEndpointConnection(
+	sinkConnection, err := NewConnection(
 		ctx,
 		sinkRpcUrl,
 		common.HexToAddress(sinkAddressHex),
@@ -213,7 +332,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	sourceConnection, err := NewEndpointConnection(
+	sourceConnection, err := NewConnection(
 		ctx,
 		sourceRpcUrl,
 		common.HexToAddress(sourceAddressHex),
@@ -227,31 +346,42 @@ func run() error {
 		return errors.Errorf("got two endpoint connections with same chain id %d", sinkConnection.ChainID)
 	}
 
-	connections := make(map[uint64]EndpointConnection)
+	connections := make(map[uint64]Connection)
 	connections[sinkConnection.ChainID] = sinkConnection
 	connections[sourceConnection.ChainID] = sourceConnection
 
 	cancelCtx, cancelFn := context.WithCancel(ctx)
 	defer cancelFn()
-	sinkRequestChannel, sinkErrorChannel := listenForRequests(cancelCtx, sinkConnection)
-	sourceRequestChannel, sourceErrorChannel := listenForRequests(cancelCtx, sourceConnection)
+	sinkTransferChannel, sinkTransferErrorChannel := listenForTransfers(cancelCtx, sinkConnection)
+	sourceTransferChannel, sourceTransferErrorChannel := listenForTransfers(cancelCtx, sourceConnection)
+	sinkRequestChannel, sinkRequestErrorChannel := listenForRequests(cancelCtx, sinkConnection)
+	sourceRequestChannel, sourceRequestErrorChannel := listenForRequests(cancelCtx, sourceConnection)
 
 	for {
 		select {
-		case err := <-sinkErrorChannel:
-			return errors.Wrap(err, "error listening to sink transfer requests")
-		case err := <-sourceErrorChannel:
-			return errors.Wrap(err, "error listening to source transfer requests")
-		case transfer := <-sinkRequestChannel:
+		case err := <-sinkTransferErrorChannel:
+			return errors.Wrap(err, "error listening to sink transfers")
+		case err := <-sourceTransferErrorChannel:
+			return errors.Wrap(err, "error listening to source transfers")
+		case err := <-sinkRequestErrorChannel:
+			return errors.Wrap(err, "error listening to sink requests")
+		case err := <-sourceRequestErrorChannel:
+			return errors.Wrap(err, "error listening to source requests")
+
+		case transfer := <-sinkTransferChannel:
 			err := processTransfer(cancelCtx, connections, transfer)
 			if err != nil {
 				log.Printf("failed to process transfer: %s", err)
 			}
-		case transfer := <-sourceRequestChannel:
+		case transfer := <-sourceTransferChannel:
 			err := processTransfer(cancelCtx, connections, transfer)
 			if err != nil {
 				log.Printf("failed to process transfer: %s", err)
 			}
+		case request := <-sinkRequestChannel:
+			go watchRequest(cancelCtx, connections, request)
+		case request := <-sourceRequestChannel:
+			go watchRequest(cancelCtx, connections, request)
 		case <-time.After(5 * time.Second):
 			log.Println("listening for events")
 		}

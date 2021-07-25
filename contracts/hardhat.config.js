@@ -117,7 +117,7 @@ task("startTransfer", "start a transfer from sink to source")
       const mint = await token.mint(account, transferValue)
       console.log("Allowing transfer from sink...")
       const allow = await token.approve(args.sink, transferValue)
-      await Promise.all([mint, allow])
+      await Promise.all([mint.wait(), allow.wait()])
 
       console.log("Requesting transfer on sink...")
       const requestTransfer = await sink.requestTransfer([args.chainid, args.source], account, transferValue)
