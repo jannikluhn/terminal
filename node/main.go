@@ -293,7 +293,7 @@ func watchRequestStep(ctx context.Context, connections map[uint64]Connection, re
 	if requestStatus.Claimed {
 		return true, nil
 	}
-	if requestStatus.LastChallengeTime+challengePeriod < uint32(block.Time()) {
+	if requestStatus.LastChallengeTime+challengePeriod >= uint32(block.Time()) {
 		return false, nil
 	}
 

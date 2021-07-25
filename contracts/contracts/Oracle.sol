@@ -98,7 +98,7 @@ contract Oracle {
     function claimRequest(TransferIdentifier calldata transferIdentifier) external {
         bytes32 hash = TransferIdentifierHash(transferIdentifier);
         Request memory request = requests[hash];
-        require(request.lastChallengeTime + challengePeriod >= block.timestamp, 'challenge period is not over');
+        require(request.lastChallengeTime + challengePeriod < block.timestamp, 'challenge period is not over');
         require(request.claimed == false, 'request already claimed');
         request.claimed = true;
         requests[hash] = request;
@@ -150,7 +150,7 @@ contract Oracle {
         if (
             request.value == value &&
             request.receiver == receiver &&
-            request.lastChallengeTime + challengePeriod >= block.timestamp &&
+            request.lastChallengeTime + challengePeriod < block.timestamp &&
             request.legit
         ) {
             return true;
