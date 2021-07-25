@@ -29,11 +29,11 @@ const sinkRpcUrl = "ws://127.0.0.1:8546/"
 const sourceRpcUrl = "ws://127.0.0.1:8556/"
 
 type EndpointConnection struct {
-	Client         *ethclient.Client
-	ChainID        uint64
-	Contract       *endpointcontract.Endpointcontract
-	OracleContract *oracle.Oracle
-	PrivateKey     *ecdsa.PrivateKey
+	Client           *ethclient.Client
+	ChainID          uint64
+	EndpointContract *endpointcontract.Endpointcontract
+	OracleContract   *oracle.Oracle
+	PrivateKey       *ecdsa.PrivateKey
 }
 
 func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address, oracleContractAddress common.Address, privateKey *ecdsa.PrivateKey) (EndpointConnection, error) {
@@ -57,11 +57,11 @@ func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractA
 	}
 
 	return EndpointConnection{
-		Client:         client,
-		ChainID:        chainID.Uint64(),
-		Contract:       endpointContract,
-		OracleContract: oracleContract,
-		PrivateKey:     privateKey,
+		Client:           client,
+		ChainID:          chainID.Uint64(),
+		EndpointContract: endpointContract,
+		OracleContract:   oracleContract,
+		PrivateKey:       privateKey,
 	}, nil
 }
 
@@ -132,7 +132,7 @@ func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Trans
 			Start:   nil,
 		}
 		transferRequestedChannel := make(chan *endpointcontract.EndpointcontractTransferRequested)
-		sub, err := conn.Contract.EndpointcontractFilterer.WatchTransferRequested(watchOpts, transferRequestedChannel)
+		sub, err := conn.EndpointContract.EndpointcontractFilterer.WatchTransferRequested(watchOpts, transferRequestedChannel)
 		if err != nil {
 			fail(errors.Wrap(err, "faild to subscribe to TransferRequested events"))
 			return
