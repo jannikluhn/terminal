@@ -101,7 +101,8 @@ abstract contract EndpointContract is HasOracle, HasConnectedEndpoints {
         Endpoint endpoint,
         address sender,
         address receiver,
-        uint256 amount
+        uint256 amount,
+        uint32 feeRate
     );
 
     event TransferReleased(
@@ -109,10 +110,13 @@ abstract contract EndpointContract is HasOracle, HasConnectedEndpoints {
         uint256 amount
     );
 
+    uint32 constant FEE_RATE_DIVISOR = 100000000;
+
     constructor(address admin, address oracle) HasConnectedEndpoints(admin) HasOracle(oracle) {
     }
 
-    function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount) public virtual;
+    // feeRate expressed in 0,000001%, so that 1_000_000 means 1%
+    function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount, uint32 feeRate) public virtual;
     function releaseTransfer(address receiver, uint256 amount) public virtual;
 
 }
@@ -125,8 +129,9 @@ contract ERC20Sink is EndpointContract {
         token = sinkToken;
     }
 
-    function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount) public override {
+    function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount, uint32 feeRate) public override {
         revertIfNotConnectedTo(endpoint);
+        require(feeRate <= 100 * FEE_RATE_DIVISOR, 'fee rate exceeds 100%');
 
         bool success = token.transferFrom(msg.sender, address(this), amount);
         if (!success) {
@@ -143,7 +148,8 @@ contract ERC20Sink is EndpointContract {
             endpoint: endpoint,
             sender: msg.sender,
             receiver: receiver,
-            amount: amount
+            amount: amount,
+            feeRate: feeRate
         });
     }
 
@@ -198,8 +204,9 @@ contract ERC20Source is EndpointContract {
         token = sourceToken;
     }
 
-    function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount) public override {
+    function requestTransfer(Endpoint memory endpoint, address receiver, uint256 amount, uint32 feeRate) public override {
         revertIfNotConnectedTo(endpoint);
+        require(feeRate <= 100 * FEE_RATE_DIVISOR, 'fee rate exceeds 100%');
 
         token.burnFrom(msg.sender, amount);
 
@@ -207,7 +214,8 @@ contract ERC20Source is EndpointContract {
             endpoint: endpoint,
             sender: msg.sender,
             receiver: receiver,
-            amount: amount
+            amount: amount,
+            feeRate: feeRate
         });
     }
 

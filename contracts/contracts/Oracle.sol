@@ -8,11 +8,13 @@ contract Oracle {
         bool legit;
         uint value;
         uint lastStake;
+        uint32 startTime;
         uint32 lastChallengeTime;
         address receiver;
         bool claimed;
         bool transferred;
         address[] stakers;
+        uint32 feeRate;
     }
 
     struct TransferIdentifier {
@@ -21,6 +23,8 @@ contract Oracle {
         uint32 logIndex;
         bytes32 txHash;
     }
+
+    uint32 constant FEE_RATE_DIVISOR = 100000000;
 
     mapping(bytes32 => Request) internal requests;
     uint32 public challengePeriod;
@@ -34,6 +38,7 @@ contract Oracle {
     event UpdatedRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint newStake, bool legit);
     event TransferSuccessful(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint value, address receiver);
     event Claim(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex);
+    event BuyRequest(uint64 chaindID, uint64 blockNumber, bytes32 txHash, uint32 logIndex, uint price);
 
     function init(uint32 _challengePeriod, uint _startingStake, IERC20 _stakedToken, IERC20 _transferToken, EndpointContract _endpoint) external {
         require(! initialized, "contract already initialized");
@@ -49,7 +54,8 @@ contract Oracle {
         return keccak256(abi.encode(transferIdentifier));
     }
 
-    function startRequest(TransferIdentifier calldata transferIdentifier, uint value, address receiver) external {
+    function startRequest(TransferIdentifier calldata transferIdentifier, uint value, address receiver, uint32 feeRate) external {
+        require(feeRate <= 100 * FEE_RATE_DIVISOR, 'fee rate exceeds 100%');
         bytes32 hash = TransferIdentifierHash(transferIdentifier);
         require(requests[hash].lastChallengeTime == 0, 'request already exists');
 
@@ -59,9 +65,11 @@ contract Oracle {
         request.legit = true;
         request.value = value;
         request.lastStake = startingStake;
+        request.startTime = uint32(block.timestamp);
         request.lastChallengeTime = uint32(block.timestamp);
         request.receiver = receiver;
         request.stakers = [msg.sender];
+        request.feeRate = feeRate;
 
         emit StartRequest(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, value, receiver);
     }
@@ -126,6 +134,20 @@ contract Oracle {
         emit Claim(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex);
     }
 
+    function buyRequest(TransferIdentifier calldata transferIdentifier) external {
+        bytes32 hash = TransferIdentifierHash(transferIdentifier);
+        Request memory request = requests[hash];
+        require(request.feeRate != 0, 'request cannot be bought');
+
+        uint price = requestBuyPrice(request.value, request.feeRate, request.startTime);
+        transferToken.transferFrom(msg.sender, request.receiver, price);
+        request.receiver = msg.sender;
+        request.feeRate = 0;
+        requests[hash] = request;
+
+        emit BuyRequest(transferIdentifier.chainID, transferIdentifier.blockNumber, transferIdentifier.txHash, transferIdentifier.logIndex, price);
+    }
+
     function closeRequest(TransferIdentifier calldata transferIdentifier) external {
         bytes32 hash = TransferIdentifierHash(transferIdentifier);
         Request memory request = requests[hash];
@@ -156,6 +178,14 @@ contract Oracle {
             return true;
         }
         return false;
+    }
+
+    function requestBuyPrice(uint value, uint32 feeRate, uint32 startTime) internal view returns (uint) {
+        require(block.timestamp - startTime < challengePeriod, 'request initial challenge time over');
+        uint totalFee = value / FEE_RATE_DIVISOR * feeRate;
+        uint elapsedTime = challengePeriod - (block.timestamp - startTime);
+        uint finalFee = totalFee * elapsedTime / challengePeriod;
+        return value - finalFee;
     }
 }
 
