@@ -4,11 +4,11 @@ import {SourceToken} from "../Endpoints.sol";
 
 contract TestERC20 is SourceToken{
 
-    constructor(string memory name_, string memory symbol_) ERC20(name_, symbol_) {
+    constructor(string memory name_, string memory symbol_) SourceToken(name_, symbol_) {
 
     }
 
-    function mint(address account, uint256 amount) external overrides {
+    function mint(address account, uint256 amount) public override {
         _mint(account, amount);
     }
 }
