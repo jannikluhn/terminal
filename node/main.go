@@ -28,7 +28,7 @@ const sourcePrivateKeyHex = "b0057716d5917badaf911b193b12b910811c1497b5bada8d771
 const sinkRpcUrl = "ws://127.0.0.1:8546/"
 const sourceRpcUrl = "ws://127.0.0.1:8556/"
 
-type EndpointConnection struct {
+type Connection struct {
 	Client           *ethclient.Client
 	ChainID          uint64
 	EndpointContract *endpointcontract.Endpointcontract
@@ -36,27 +36,27 @@ type EndpointConnection struct {
 	PrivateKey       *ecdsa.PrivateKey
 }
 
-func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address, oracleContractAddress common.Address, privateKey *ecdsa.PrivateKey) (EndpointConnection, error) {
+func NewConnection(ctx context.Context, rpcUrl string, endpointContractAddress common.Address, oracleContractAddress common.Address, privateKey *ecdsa.PrivateKey) (Connection, error) {
 	client, err := ethclient.Dial(rpcUrl)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrapf(err, "failed to connect to Ethereum node at %s", rpcUrl)
+		return Connection{}, errors.Wrapf(err, "failed to connect to Ethereum node at %s", rpcUrl)
 	}
 
 	chainID, err := client.ChainID(ctx)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrap(err, "failed to query chain id")
+		return Connection{}, errors.Wrap(err, "failed to query chain id")
 	}
 
 	endpointContract, err := endpointcontract.NewEndpointcontract(endpointContractAddress, client)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrap(err, "faild to create endpoint contract instance")
+		return Connection{}, errors.Wrap(err, "faild to create endpoint contract instance")
 	}
 	oracleContract, err := oracle.NewOracle(oracleContractAddress, client)
 	if err != nil {
-		return EndpointConnection{}, errors.Wrap(err, "faild to create oracle contract instance")
+		return Connection{}, errors.Wrap(err, "faild to create oracle contract instance")
 	}
 
-	return EndpointConnection{
+	return Connection{
 		Client:           client,
 		ChainID:          chainID.Uint64(),
 		EndpointContract: endpointContract,
@@ -65,7 +65,7 @@ func NewEndpointConnection(ctx context.Context, rpcUrl string, endpointContractA
 	}, nil
 }
 
-func (conn *EndpointConnection) TransactOpts() (*bind.TransactOpts, error) {
+func (conn *Connection) TransactOpts() (*bind.TransactOpts, error) {
 	opts, err := bind.NewKeyedTransactorWithChainID(conn.PrivateKey, new(big.Int).SetUint64(conn.ChainID))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create transactor")
@@ -116,7 +116,7 @@ func NewTransferFromRequestEvent(chainID uint64, ev *endpointcontract.Endpointco
 	}
 }
 
-func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Transfer, chan error) {
+func listenForRequests(ctx context.Context, conn Connection) (chan Transfer, chan error) {
 	requestChannel := make(chan Transfer)
 	errorChannel := make(chan error)
 
@@ -157,7 +157,7 @@ func listenForRequests(ctx context.Context, conn EndpointConnection) (chan Trans
 	return requestChannel, errorChannel
 }
 
-func processTransfer(ctx context.Context, connections map[uint64]EndpointConnection, transfer Transfer) error {
+func processTransfer(ctx context.Context, connections map[uint64]Connection, transfer Transfer) error {
 	toConn, ok := connections[transfer.ToEndpoint.ChainID]
 	if !ok {
 		return errors.Errorf("received transfer request to unknown chain id %d: %+v", transfer.ToEndpoint.ChainID, transfer)
@@ -203,7 +203,7 @@ func run() error {
 		return errors.Wrapf(err, "got invalid private key")
 	}
 
-	sinkConnection, err := NewEndpointConnection(
+	sinkConnection, err := NewConnection(
 		ctx,
 		sinkRpcUrl,
 		common.HexToAddress(sinkAddressHex),
@@ -213,7 +213,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	sourceConnection, err := NewEndpointConnection(
+	sourceConnection, err := NewConnection(
 		ctx,
 		sourceRpcUrl,
 		common.HexToAddress(sourceAddressHex),
@@ -227,7 +227,7 @@ func run() error {
 		return errors.Errorf("got two endpoint connections with same chain id %d", sinkConnection.ChainID)
 	}
 
-	connections := make(map[uint64]EndpointConnection)
+	connections := make(map[uint64]Connection)
 	connections[sinkConnection.ChainID] = sinkConnection
 	connections[sourceConnection.ChainID] = sourceConnection
 
