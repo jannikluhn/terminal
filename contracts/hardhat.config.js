@@ -86,26 +86,43 @@ task("connectEndpoint", "Connect a sink or a source to another sink or source")
     console.log("Done");
   })
 
-task("startTransfer")
-  .addParam("token", "address of the token contract")
+task("initRelayer", "initialize a relayer for testing")
+  .addParam("source", "source contract address")
+  .addParam("oracle", "oracle contract address")
+  .setAction(async (args) => {
+    const source = (await hre.ethers.getContractFactory("ERC20Source")).attach(args.source)
+    const token = (await hre.ethers.getContractFactory("SourceToken")).attach(await source.token())
+    const address = (await hre.ethers.getSigners())[0].address
+    const mintTx = await token.mint(address, "1000000000000000000000")
+    await mintTx.wait()
+
+    const oracle = (await hre.ethers.getContractFactory("Oracle")).attach(await args.oracle)
+    const allowTx = await token.approve(args.oracle, "1000000000000000000000")
+    await allowTx.wait()
+  });
+
+task("startTransfer", "start a transfer from sink to source")
   .addParam("sink", "address of the sink")
   .addParam("source", "address of the source")
+  .addParam("chainid", "chain id of the source", undefined, types.int)
   .setAction(async (args) => {
-      const account = await hre.ethers.getSigners()[0]
+      const account = (await hre.ethers.getSigners())[0].address
       const transferValue = 123456
 
-      console.logs("Minting tokens to user...", account)
-      const token = await (await hre.ethers.getContractFactory("TestERC20")).attach(args.token)
+      const sink = await (await hre.ethers.getContractFactory("ERC20Sink")).attach(args.sink)
+      const tokenAddress = await sink.token()
+      const token = await (await hre.ethers.getContractFactory("TestERC20")).attach(tokenAddress)
+
+      console.log("Minting tokens to user...", account)
       const mint = await token.mint(account, transferValue)
-      console.logs("Allowing transfer from sink...")
+      console.log("Allowing transfer from sink...")
       const allow = await token.approve(args.sink, transferValue)
       await Promise.all([mint, allow])
 
-      console.logs("Requesting transfer on sink...")
-      const sink = await (await hre.ethers.getContractFactory("ERC20Sink")).attach(args.sink)
-      const chainId = 1
-      const requestTransfer = sink.requestTransfer([chainId, args.source], account, transferValue)
-      await requestTransfer
+      console.log("Requesting transfer on sink...")
+      const requestTransfer = await sink.requestTransfer([args.chainid, args.source], account, transferValue)
+      await requestTransfer.wait()
+      console.log("done")
   })
 
 // You need to export an object to set up your config
