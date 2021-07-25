@@ -105,6 +105,7 @@ task("startTransfer", "start a transfer from sink to source")
   .addParam("sink", "address of the sink")
   .addParam("source", "address of the source")
   .addParam("chainid", "chain id of the source", undefined, types.int)
+  .addParam("receiver", "receiver address")
   .setAction(async (args) => {
       const account = (await hre.ethers.getSigners())[0].address
       const transferValue = 123456
@@ -120,10 +121,18 @@ task("startTransfer", "start a transfer from sink to source")
       await Promise.all([mint.wait(), allow.wait()])
 
       console.log("Requesting transfer on sink...")
-      const requestTransfer = await sink.requestTransfer([args.chainid, args.source], account, transferValue)
+      const requestTransfer = await sink.requestTransfer([args.chainid, args.source], args.receiver, transferValue)
       await requestTransfer.wait()
       console.log("done")
   })
+
+task("queryBalance")
+  .addParam("token")
+  .addParam("address")
+  .setAction(async (args) => {
+    const token = await (await hre.ethers.getContractFactory("TestERC20")).attach(args.token)
+    console.log("Current balance of", args.address, (await token.balanceOf(args.address)).toString())
+  });
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
